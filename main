@@ -1,0 +1,102 @@
+from __future__ import print_function
+import kivy
+kivy.require('1.9.2')
+from kivy.app import App
+from kivy.uix.widget import Widget
+from kivy.lang import Builder
+from kivy.uix.screenmanager import ScreenManager, Screen, FadeTransition
+
+import myo as libmyo; libmyo.init()
+import time
+
+occurances = 0
+i = 0
+
+class Listener(libmyo.DeviceListener):
+
+    interval = 0.05  # Output only 0.05 seconds
+
+    def __init__(self):
+        super(Listener, self).__init__()
+        self.orientation = None
+        self.pose = libmyo.Pose.rest
+        self.emg_enabled = False
+        self.locked = False
+        self.rssi = None
+        self.emg = None
+        self.last_time = 0
+        time.sleep(1)
+        print("Welcome!")
+        time.sleep(.5)
+        global old_time
+        old_time = time.time()
+
+    def on_connect(self, myo, timestamp, firmware_version):
+        myo.vibrate('short')
+        myo.vibrate('short')
+        myo.request_rssi()
+        myo.request_battery_level()
+        myo.set_stream_emg(libmyo.StreamEmg.enabled)
+
+    #2nd part: method to detect hand movements
+    def on_pose(self, myo, timestamp, pose):
+        global occurances
+        global i
+
+        if i < 15 and bool:
+            if pose == libmyo.Pose.fist:
+                print ("Exercise done")
+                ############################          OUTPUT TO SCREEN USING KIVY            ###############################
+                occurances += 1
+
+    def on_unlock(self, myo, timestamp):
+        self.locked = False
+        #self.output()
+
+    def on_lock(self, myo, timestamp):
+        self.locked = True
+        #self.output()
+
+def mainMyo():
+    try:
+        hub = libmyo.Hub()
+    except MemoryError:
+        print("Myo Hub could not be created. Make sure Myo Connect is running.")
+        return
+
+    hub.set_locking_policy(libmyo.LockingPolicy.none)
+    hub.run(5, Listener())
+
+    try:
+        while hub.running:
+            time.sleep(0.25)
+    except KeyboardInterrupt:
+        print("\nQuitting ...")
+    finally:
+        print("Shutting down hub...")
+        hub.shutdown()
+
+
+class TouchInput(Widget):
+    def on_touch_down(self, touch):
+        mainMyo()
+
+class MainScreen(Screen):
+    pass
+
+class AnotherScreen(Screen):
+    pass
+
+class ScreenManagement(ScreenManager):
+    pass
+
+presentation = Builder.load_file("main.kv")
+
+class MainApp(App):
+    def build(self):
+        return presentation
+
+if __name__ == "__main__":
+     MainApp().run()
+
+
