@@ -38,7 +38,6 @@ class Listener(libmyo.DeviceListener):
         myo.request_battery_level()
         myo.set_stream_emg(libmyo.StreamEmg.enabled)
 
-    #2nd part: method to detect hand movements
     def on_pose(self, myo, timestamp, pose):
         global occurances
         global i
